@@ -1,37 +1,42 @@
 'use client'
 
 import { useDimensionStore } from '@/stores/dimension-store'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Plus } from 'lucide-react'
 
 export function DimensionTabs() {
   const { dimensions, activeDimensionId, setActiveDimension } = useDimensionStore()
+  const activeId = activeDimensionId ?? 'all'
 
   return (
-    <Tabs
-      value={activeDimensionId ?? 'all'}
-      onValueChange={(v) => setActiveDimension(v === 'all' ? null : v)}
-    >
-      <TabsList className="h-9 bg-transparent gap-1 p-0">
-        <TabsTrigger
-          value="all"
-          className="rounded-lg px-3 py-1.5 text-sm data-[state=active]:bg-black/5 data-[state=active]:shadow-none"
+    <div className="flex items-center gap-1">
+      <button
+        onClick={() => setActiveDimension(null)}
+        className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium tracking-[-0.01em] transition-all duration-200 ${
+          activeId === 'all'
+            ? 'bg-[#1d1d1f] text-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+            : 'text-[rgba(0,0,0,0.48)] hover:text-[#1d1d1f] hover:bg-black/[0.04]'
+        }`}
+      >
+        全部
+      </button>
+      {dimensions.map((dim) => (
+        <button
+          key={dim.id}
+          onClick={() => setActiveDimension(dim.id)}
+          className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] font-medium tracking-[-0.01em] transition-all duration-200 ${
+            activeId === dim.id
+              ? 'text-white shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+              : 'text-[rgba(0,0,0,0.48)] hover:text-[#1d1d1f] hover:bg-black/[0.04]'
+          }`}
+          style={activeId === dim.id ? { backgroundColor: dim.color } : undefined}
         >
-          全部
-        </TabsTrigger>
-        {dimensions.map((dim) => (
-          <TabsTrigger
-            key={dim.id}
-            value={dim.id}
-            className="rounded-lg px-3 py-1.5 text-sm data-[state=active]:bg-black/5 data-[state=active]:shadow-none"
-          >
-            <span className="mr-1">{dim.icon}</span>
-            {dim.name}
-          </TabsTrigger>
-        ))}
-        <button className="rounded-lg px-2 py-1.5 text-sm text-text-tertiary hover:text-text-secondary transition-colors">
-          +
+          <span className="text-[12px]">{dim.icon}</span>
+          {dim.name}
         </button>
-      </TabsList>
-    </Tabs>
+      ))}
+      <button className="w-7 h-7 flex items-center justify-center rounded-full text-[rgba(0,0,0,0.2)] hover:text-[rgba(0,0,0,0.48)] hover:bg-black/[0.04] transition-all duration-200">
+        <Plus size={14} strokeWidth={1.5} />
+      </button>
+    </div>
   )
 }

@@ -137,8 +137,15 @@
   }
   body {
     @apply bg-background text-foreground;
+    letter-spacing: -0.022em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   html {
     @apply font-sans;
+  }
+  ::selection {
+    background-color: rgba(0, 113, 227, 0.2);
+    color: #1d1d1f;
   }
 }
