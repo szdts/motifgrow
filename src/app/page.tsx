@@ -7,6 +7,10 @@ import { useUIStore } from '@/stores/ui-store'
 import { useCalendarStore } from '@/stores/calendar-store'
 import { useDimensionStore } from '@/stores/dimension-store'
 import { ChevronLeft, ChevronRight, Check, X, Clock } from 'lucide-react'
+import { DayView } from '@/components/calendar/day-view'
+import { MonthView } from '@/components/calendar/month-view'
+import { EventPopover } from '@/components/calendar/event-popover'
+import { EventEditModal } from '@/components/calendar/event-edit-modal'
 import type { CalendarEvent } from '@/types'
 
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 7) // 07:00 - 23:00
@@ -108,9 +112,10 @@ function WeekHeader() {
 interface EventBlockProps {
   event: CalendarEvent
   color: string
+  onEventClick?: (eventId: string) => void
 }
 
-function EventBlock({ event, color }: EventBlockProps) {
+function EventBlock({ event, color, onEventClick }: EventBlockProps) {
   const startHour = event.startAt.getHours() + event.startAt.getMinutes() / 60
   const durationHours = (event.endAt.getTime() - event.startAt.getTime()) / 3600000
 
@@ -122,6 +127,10 @@ function EventBlock({ event, color }: EventBlockProps) {
 
   const formatTime = (d: Date) =>
     `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+
+  const handleClick = () => {
+    onEventClick?.(event.id)
+  }
 
   const isConfirmed = event.eventType === 'confirmed'
   const isSuggestion = event.eventType === 'suggestion'
@@ -137,6 +146,7 @@ function EventBlock({ event, color }: EventBlockProps) {
           color: `color-mix(in srgb, ${color} 60%, transparent)`,
           backgroundColor: 'transparent',
         }}
+        onClick={handleClick}
       >
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
@@ -176,6 +186,7 @@ function EventBlock({ event, color }: EventBlockProps) {
           backgroundColor: '#f5f5f7',
           color: 'rgba(0,0,0,0.4)',
         }}
+        onClick={handleClick}
       >
         <div className="truncate leading-tight">{event.title}</div>
         {height >= 40 && (
@@ -198,8 +209,9 @@ function EventBlock({ event, color }: EventBlockProps) {
         borderLeft: `3px solid ${color}`,
         color,
       }}
+      onClick={handleClick}
     >
-      <div className="truncate leading-tight">{'✓ '}{event.title}</div>
+      <div className="truncate leading-tight">{'\u2713 '}{event.title}</div>
       {height >= 40 && (
         <div className="text-[10px] mt-0.5 opacity-60">
           {formatTime(event.startAt)} - {formatTime(event.endAt)}
@@ -294,7 +306,11 @@ function SuggestionPrompt() {
   )
 }
 
-function WeekGrid() {
+interface WeekGridProps {
+  onEventClick?: (eventId: string) => void
+}
+
+function WeekGrid({ onEventClick }: WeekGridProps) {
   const currentDate = useUIStore((s) => s.currentDate)
   const events = useCalendarStore((s) => s.events)
   const dimensions = useDimensionStore((s) => s.dimensions)
@@ -371,6 +387,7 @@ function WeekGrid() {
                     key={ev.id}
                     event={ev}
                     color={color}
+                    onEventClick={onEventClick}
                   />
                 )
               })}
@@ -383,6 +400,19 @@ function WeekGrid() {
 }
 
 export default function CalendarPage() {
+  const calendarView = useUIStore((s) => s.calendarView)
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
+  const [editEventId, setEditEventId] = useState<string | null>(null)
+
+  const handleEventClick = (eventId: string) => {
+    setSelectedEventId(eventId)
+  }
+
+  const handleOpenEdit = (eventId: string) => {
+    setSelectedEventId(null)
+    setEditEventId(eventId)
+  }
+
   return (
     <>
       <Sidebar />
@@ -391,10 +421,27 @@ export default function CalendarPage() {
           <DimensionTabs />
           <CalendarNav />
         </div>
-        <WeekHeader />
+        {calendarView === 'week' && <WeekHeader />}
         <SuggestionPrompt />
-        <WeekGrid />
+        {calendarView === 'day' && <DayView />}
+        {calendarView === 'week' && <WeekGrid onEventClick={handleEventClick} />}
+        {calendarView === 'month' && <MonthView />}
       </main>
+
+      {selectedEventId && (
+        <EventPopover
+          eventId={selectedEventId}
+          onClose={() => setSelectedEventId(null)}
+          onOpenEdit={handleOpenEdit}
+        />
+      )}
+
+      {editEventId && (
+        <EventEditModal
+          eventId={editEventId}
+          onClose={() => setEditEventId(null)}
+        />
+      )}
     </>
   )
 }
