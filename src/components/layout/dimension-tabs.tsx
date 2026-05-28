@@ -1,6 +1,7 @@
 'use client'
 
 import { useDimensionStore } from '@/stores/dimension-store'
+import { DimensionIcon } from '@/components/ui/dimension-icon'
 import { Plus } from 'lucide-react'
 
 export function DimensionTabs() {
@@ -30,7 +31,7 @@ export function DimensionTabs() {
           }`}
           style={activeId === dim.id ? { backgroundColor: dim.color } : undefined}
         >
-          <span className="text-[12px]">{dim.icon}</span>
+          <DimensionIcon name={dim.icon} size={14} strokeWidth={activeId === dim.id ? 2 : 1.5} />
           {dim.name}
         </button>
       ))}

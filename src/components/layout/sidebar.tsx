@@ -5,6 +5,7 @@ import { useBacklogStore } from '@/stores/backlog-store'
 import { useOKRStore } from '@/stores/okr-store'
 import { useDimensionStore } from '@/stores/dimension-store'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { DimensionIcon } from '@/components/ui/dimension-icon'
 import { Plus } from 'lucide-react'
 
 function MiniCalendar() {
@@ -82,7 +83,7 @@ function QuotaBars() {
           <div key={q.name}>
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-[12px] font-medium text-[#1d1d1f] tracking-[-0.01em]">
-                {q.icon} {q.name}
+                <DimensionIcon name={q.icon} size={13} strokeWidth={1.5} /> {q.name}
               </span>
               <span className="text-[11px] tabular-nums text-[rgba(0,0,0,0.36)]">
                 {q.current}/{q.target}{q.unit}
