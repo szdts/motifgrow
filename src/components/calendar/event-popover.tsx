@@ -1,5 +1,6 @@
 'use client'
 
+import { useRef, useEffect } from 'react'
 import { useCalendarStore } from '@/stores/calendar-store'
 import { useDimensionStore } from '@/stores/dimension-store'
 import { useBacklogStore } from '@/stores/backlog-store'
@@ -15,14 +16,28 @@ import {
   Clock,
 } from 'lucide-react'
 
+interface AnchorRect {
+  top: number
+  left: number
+  width: number
+  height: number
+  right: number
+  bottom: number
+}
+
 interface EventPopoverProps {
   eventId: string
+  anchorRect?: AnchorRect | null
   onClose: () => void
   onOpenEdit?: (eventId: string) => void
 }
 
+const POPOVER_WIDTH = 320
+const POPOVER_ARROW_SIZE = 8
+
 export function EventPopover({
   eventId,
+  anchorRect,
   onClose,
   onOpenEdit,
 }: EventPopoverProps) {
@@ -34,6 +49,16 @@ export function EventPopover({
   const removeEvent = useCalendarStore((s) => s.removeEvent)
   const dimensions = useDimensionStore((s) => s.dimensions)
   const backlogItems = useBacklogStore((s) => s.items)
+  const popoverRef = useRef<HTMLDivElement>(null)
+
+  // Close on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
 
   if (!event) return null
 
@@ -61,17 +86,85 @@ export function EventPopover({
     onClose()
   }
 
+  // Position calculation: anchored to event, preferring right side
+  const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1200
+  const viewportH = typeof window !== 'undefined' ? window.innerHeight : 800
+
+  let popoverLeft: number
+  let popoverTop: number
+  let arrowSide: 'left' | 'right' = 'left'
+
+  if (anchorRect) {
+    // Prefer placing to the right of the event
+    const rightSpace = viewportW - anchorRect.right
+    const leftSpace = anchorRect.left
+
+    if (rightSpace >= POPOVER_WIDTH + 16) {
+      popoverLeft = anchorRect.right + POPOVER_ARROW_SIZE + 4
+      arrowSide = 'left'
+    } else if (leftSpace >= POPOVER_WIDTH + 16) {
+      popoverLeft = anchorRect.left - POPOVER_WIDTH - POPOVER_ARROW_SIZE - 4
+      arrowSide = 'right'
+    } else {
+      // Fall back to right with scroll
+      popoverLeft = anchorRect.right + POPOVER_ARROW_SIZE + 4
+      arrowSide = 'left'
+    }
+
+    // Vertically center on the anchor, clamped to viewport
+    const anchorCenterY = anchorRect.top + anchorRect.height / 2
+    popoverTop = Math.max(8, Math.min(anchorCenterY - 80, viewportH - 400))
+  } else {
+    // Fallback: centered (legacy behavior for DayView calling without anchor)
+    popoverLeft = viewportW / 2 - POPOVER_WIDTH / 2
+    popoverTop = viewportH / 2 - 120
+  }
+
+  // Arrow Y position relative to popover
+  const arrowTop = anchorRect
+    ? Math.max(20, Math.min(anchorRect.top + anchorRect.height / 2 - popoverTop, 160))
+    : 80
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50" onClick={onClose}>
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: -4 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: -4 }}
+          ref={popoverRef}
+          initial={{ opacity: 0, scale: 0.95, x: arrowSide === 'left' ? -8 : 8 }}
+          animate={{ opacity: 1, scale: 1, x: 0 }}
+          exit={{ opacity: 0, scale: 0.95, x: arrowSide === 'left' ? -8 : 8 }}
           transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
           onClick={(e) => e.stopPropagation()}
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] bg-white rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden"
+          className="absolute bg-white rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-visible"
+          style={{
+            left: `${popoverLeft}px`,
+            top: `${popoverTop}px`,
+            width: `${POPOVER_WIDTH}px`,
+          }}
         >
+          {/* Arrow */}
+          {anchorRect && (
+            <div
+              className="absolute w-0 h-0"
+              style={{
+                top: `${arrowTop}px`,
+                ...(arrowSide === 'left'
+                  ? {
+                      left: `-${POPOVER_ARROW_SIZE}px`,
+                      borderTop: `${POPOVER_ARROW_SIZE}px solid transparent`,
+                      borderBottom: `${POPOVER_ARROW_SIZE}px solid transparent`,
+                      borderRight: `${POPOVER_ARROW_SIZE}px solid white`,
+                    }
+                  : {
+                      right: `-${POPOVER_ARROW_SIZE}px`,
+                      borderTop: `${POPOVER_ARROW_SIZE}px solid transparent`,
+                      borderBottom: `${POPOVER_ARROW_SIZE}px solid transparent`,
+                      borderLeft: `${POPOVER_ARROW_SIZE}px solid white`,
+                    }),
+              }}
+            />
+          )}
+
           {/* Header actions */}
           <div className="flex items-center justify-end gap-1 px-3 pt-3">
             {event.eventType === 'confirmed' && (
