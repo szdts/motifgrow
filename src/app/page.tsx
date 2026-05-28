@@ -463,27 +463,54 @@ function WeekGrid({ interactions }: WeekGridProps) {
     return -1
   })()
 
-  // Global mouse move/up for resize and move operations
+  // Global mouse move/up for ALL drag operations (resize, move, drag-to-create)
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      const gridRect = gridRef.current?.getBoundingClientRect()
+      if (!gridRect) return
+
       if (resizing) {
-        const gridRect = gridRef.current?.getBoundingClientRect()
-        if (gridRect) {
-          const yInGrid = e.clientY - gridRect.top
-          handleResizeMove(e.clientY)
-        }
+        handleResizeMove(e.clientY)
       }
-      if (moving || interactions.dragSelection !== null) {
-        // Nothing here, handled in the specific grid-level handler below
+
+      // Drag-to-create: relay to hook even when mouse is outside grid
+      const yInGrid = e.clientY - gridRect.top
+      handleGridMouseMove(yInGrid)
+
+      if (moving) {
+        handleMoveMove(e.clientX, e.clientY, {
+          top: gridRect.top,
+          left: gridRect.left + 56,
+          width: gridRect.width - 56,
+          height: gridRect.height,
+          right: gridRect.right,
+          bottom: gridRect.bottom,
+        })
       }
     }
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: MouseEvent) => {
       if (resizing) {
         handleResizeEnd()
       }
       if (moving) {
         handleMoveEnd()
+      }
+      // Drag-to-create: compute grid rect and finish
+      const gridRect = gridRef.current?.getBoundingClientRect()
+      if (gridRect) {
+        const xInGrid = e.clientX - gridRect.left - 56
+        const dayWidth = (gridRect.width - 56) / 7
+        const dayIndex = Math.max(0, Math.min(6, Math.floor(xInGrid / dayWidth)))
+        const dayLeft = gridRect.left + 56 + dayIndex * dayWidth
+        handleGridMouseUp({
+          top: gridRect.top,
+          left: dayLeft,
+          width: dayWidth,
+          height: gridRect.height,
+          right: dayLeft + dayWidth,
+          bottom: gridRect.bottom,
+        })
       }
     }
 
@@ -493,53 +520,10 @@ function WeekGrid({ interactions }: WeekGridProps) {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [resizing, moving, handleResizeMove, handleResizeEnd, handleMoveEnd])
+  }, [resizing, moving, handleResizeMove, handleResizeEnd, handleMoveEnd, handleMoveMove, handleGridMouseMove, handleGridMouseUp])
 
-  // Grid-level mouse handlers for drag-to-create and move
-  const handleGridMouseMoveEvent = useCallback((e: React.MouseEvent) => {
-    const gridRect = gridRef.current?.getBoundingClientRect()
-    if (!gridRect) return
-
-    const yInGrid = e.clientY - gridRect.top
-    handleGridMouseMove(yInGrid)
-
-    if (moving) {
-      handleMoveMove(e.clientX, e.clientY, {
-        top: gridRect.top,
-        left: gridRect.left + 56, // offset for time label column
-        width: gridRect.width - 56,
-        height: gridRect.height,
-        right: gridRect.right,
-        bottom: gridRect.bottom,
-      })
-    }
-  }, [handleGridMouseMove, handleMoveMove, moving])
-
-  const handleGridMouseUpEvent = useCallback((e: React.MouseEvent) => {
-    const gridRect = gridRef.current?.getBoundingClientRect()
-    if (!gridRect) return
-
-    if (moving) {
-      handleMoveEnd()
-      return
-    }
-
-    // For drag-to-create, compute the day column rect
-    const yInGrid = e.clientY - gridRect.top
-    const xInGrid = e.clientX - gridRect.left - 56
-    const dayWidth = (gridRect.width - 56) / 7
-    const dayIndex = Math.max(0, Math.min(6, Math.floor(xInGrid / dayWidth)))
-
-    const dayLeft = gridRect.left + 56 + dayIndex * dayWidth
-    handleGridMouseUp({
-      top: gridRect.top,
-      left: dayLeft,
-      width: dayWidth,
-      height: gridRect.height,
-      right: dayLeft + dayWidth,
-      bottom: gridRect.bottom,
-    })
-  }, [handleGridMouseUp, handleMoveEnd, moving])
+  // Grid-level handlers are now handled by global window listeners above.
+  // Only keep a noop to prevent React warnings on unused refs.
 
   // Handle move start wrapper to pass grid rect
   const handleMoveStartWrapper = useCallback((eventId: string, e: React.MouseEvent) => {
@@ -561,11 +545,8 @@ function WeekGrid({ interactions }: WeekGridProps) {
         ref={gridRef}
         className="grid grid-cols-[56px_repeat(7,1fr)] relative select-none"
         style={{ height: `${17 * HOUR_HEIGHT}px` }}
-        onMouseMove={handleGridMouseMoveEvent}
-        onMouseUp={handleGridMouseUpEvent}
-        onMouseLeave={(e) => {
-          // Only end drag operations on actual leave, not child element transitions
-          if (e.relatedTarget && gridRef.current?.contains(e.relatedTarget as Node)) return
+        onMouseLeave={() => {
+          // No-op: global window handlers manage all drag operations
         }}
       >
         {HOURS.map((hour) => (
