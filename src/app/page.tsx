@@ -660,7 +660,7 @@ function WeekGrid({ interactions }: WeekGridProps) {
           return (
             <div
               key={`overlay-${dayIndex}`}
-              className="absolute"
+              className="absolute pointer-events-none"
               style={{
                 left: `calc(56px + ${dayIndex} * ((100% - 56px) / 7))`,
                 width: `calc((100% - 56px) / 7)`,
@@ -673,7 +673,7 @@ function WeekGrid({ interactions }: WeekGridProps) {
                 const dim = dimensions.find((d) => d.id === ev.dimensionId)
                 const color = dim?.color ?? '#86868b'
                 return (
-                  <div key={ev.id} data-event-block>
+                  <div key={ev.id} data-event-block className="pointer-events-auto">
                     <EventBlock
                       event={ev}
                       color={color}
