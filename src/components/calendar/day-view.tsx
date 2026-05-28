@@ -10,9 +10,9 @@ import { MiniCreateCard } from './mini-create-card'
 import { Check, X } from 'lucide-react'
 import type { CalendarEvent } from '@/types'
 
-const HOURS = Array.from({ length: 17 }, (_, i) => i + 7)
+const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const HOUR_HEIGHT = 56
-const GRID_START_HOUR = 7
+const GRID_START_HOUR = 0
 const SNAP_MINUTES = 15
 const SINGLE_CLICK_DELAY = 250
 const MIN_DRAG_DISTANCE = 4
@@ -190,10 +190,11 @@ export function DayView() {
   const events = useCalendarStore((s) => s.events)
   const updateEvent = useCalendarStore((s) => s.updateEvent)
   const dimensions = useDimensionStore((s) => s.dimensions)
-  const activeDim = useDimensionStore((s) => s.activeDimensionId)
+  const activeDimIds = useDimensionStore((s) => s.activeDimensionIds)
 
   const [now, setNow] = useState(new Date())
   const gridRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
   // Interaction state
   const [popover, setPopover] = useState<{ eventId: string; anchorRect: AnchorRect } | null>(null)
@@ -238,6 +239,14 @@ export function DayView() {
     return () => clearInterval(interval)
   }, [])
 
+  useEffect(() => {
+    if (scrollRef.current) {
+      const now = new Date()
+      const scrollTo = Math.max(0, (now.getHours() - 1) * HOUR_HEIGHT)
+      scrollRef.current.scrollTop = scrollTo
+    }
+  }, [currentDate])
+
   const isToday = currentDate.toDateString() === now.toDateString()
 
   const dayStart = new Date(currentDate)
@@ -248,7 +257,7 @@ export function DayView() {
   const dayEvents = useMemo(() => {
     return events
       .filter((e) => e.startAt >= dayStart && e.startAt < dayEnd)
-      .filter((e) => !activeDim || e.dimensionId === activeDim)
+      .filter((e) => activeDimIds.length === 0 || activeDimIds.includes(e.dimensionId))
       .map((e) => {
         const dim = dimensions.find((d) => d.id === e.dimensionId)
         return {
@@ -258,10 +267,10 @@ export function DayView() {
           durationHours: (e.endAt.getTime() - e.startAt.getTime()) / 3600000,
         }
       })
-  }, [events, dayStart.getTime(), dayEnd.getTime(), activeDim, dimensions])
+  }, [events, dayStart.getTime(), dayEnd.getTime(), activeDimIds, dimensions])
 
   const nowHour = now.getHours() + now.getMinutes() / 60
-  const nowTop = (nowHour - 7) * HOUR_HEIGHT
+  const nowTop = (nowHour - GRID_START_HOUR) * HOUR_HEIGHT
 
   // Event click/double-click
   const handleEventClick = useCallback((eventId: string, e: React.MouseEvent) => {
@@ -566,7 +575,7 @@ export function DayView() {
         },
       })
 
-      return null
+      return prev
     })
   }, [updateEvent, currentDate])
 
@@ -614,12 +623,12 @@ export function DayView() {
   }, [])
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div ref={scrollRef} className="flex-1 overflow-y-auto">
       {/* Time grid */}
       <div
         ref={gridRef}
         className="grid grid-cols-[56px_1fr] relative select-none"
-        style={{ height: `${17 * HOUR_HEIGHT}px` }}
+        style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}
         onMouseMove={handleGridMouseMove}
         onMouseUp={handleGridMouseUp}
       >
@@ -697,7 +706,7 @@ export function DayView() {
         ))}
 
         {/* Current time line */}
-        {isToday && nowTop > 0 && nowTop < 17 * HOUR_HEIGHT && (
+        {isToday && nowTop >= 0 && nowTop < HOURS.length * HOUR_HEIGHT && (
           <div
             className="absolute left-14 right-0 flex items-center z-10 pointer-events-none"
             style={{ top: `${nowTop}px` }}
@@ -733,7 +742,7 @@ export function DayView() {
           startHour={createCard.startHour}
           endHour={createCard.endHour}
           anchorRect={createCard.anchorRect}
-          onClose={() => setCreateCard(null)}
+          onClose={() => { setCreateCard(null); setDragSelection(null) }}
         />
       )}
     </div>

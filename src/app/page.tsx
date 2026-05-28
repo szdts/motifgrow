@@ -17,9 +17,9 @@ import { MiniCreateCard } from '@/components/calendar/mini-create-card'
 import { useCalendarInteractions } from '@/hooks/use-calendar-interactions'
 import type { CalendarEvent } from '@/types'
 
-const HOURS = Array.from({ length: 17 }, (_, i) => i + 7) // 07:00 - 23:00
+const HOURS = Array.from({ length: 24 }, (_, i) => i) // 00:00 - 23:00
 const HOUR_HEIGHT = 56
-const GRID_START_HOUR = 7
+const GRID_START_HOUR = 0
 
 function CalendarNav() {
   const { calendarView, setCalendarView, goToToday, goForward, goBackward, currentDate } = useUIStore()
@@ -115,6 +115,29 @@ function WeekHeader() {
           </div>
         )
       })}
+    </div>
+  )
+}
+
+function DayHeader() {
+  const currentDate = useUIStore((s) => s.currentDate)
+  const today = new Date()
+  const isToday = currentDate.getDate() === today.getDate() && currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear()
+  const dayLabels = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+
+  return (
+    <div className="grid grid-cols-[56px_1fr] border-b border-black/[0.06]">
+      <div />
+      <div className="flex flex-col items-center py-2.5">
+        <span className={`text-[11px] tracking-[0.01em] ${isToday ? 'text-[#0071e3] font-semibold' : 'text-[rgba(0,0,0,0.36)]'}`}>
+          {dayLabels[currentDate.getDay()]}
+        </span>
+        <span className={`mt-1 text-[18px] font-medium tracking-[-0.02em] w-8 h-8 flex items-center justify-center rounded-full transition-colors ${
+          isToday ? 'bg-[#0071e3] text-white shadow-[0_1px_4px_rgba(0,113,227,0.3)]' : 'text-[#1d1d1f]'
+        }`}>
+          {currentDate.getDate()}
+        </span>
+      </div>
     </div>
   )
 }
@@ -326,9 +349,7 @@ function CurrentTimeLine() {
   const hour = now.getHours()
   const min = now.getMinutes()
 
-  if (hour < 7 || hour >= 24) return null
-
-  const top = (hour - 7) * HOUR_HEIGHT + (min / 60) * HOUR_HEIGHT
+  const top = (hour - GRID_START_HOUR) * HOUR_HEIGHT + (min / 60) * HOUR_HEIGHT
 
   return (
     <div
@@ -363,11 +384,11 @@ function SuggestionPrompt() {
     <AnimatePresence>
       {isVisible && suggestion && (
         <motion.div
-          initial={{ opacity: 0, y: -16 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -16 }}
+          exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="absolute top-3 left-1/2 -translate-x-1/2 z-20 w-max max-w-[90%]"
+          className="fixed bottom-5 right-5 z-50 w-max max-w-[420px]"
         >
           <div
             className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-[rgba(0,0,0,0.04)_0_1px_3px,rgba(0,0,0,0.08)_0_1px_2px]"
@@ -426,8 +447,18 @@ function WeekGrid({ interactions }: WeekGridProps) {
   const currentDate = useUIStore((s) => s.currentDate)
   const events = useCalendarStore((s) => s.events)
   const dimensions = useDimensionStore((s) => s.dimensions)
-  const activeDimensionId = useDimensionStore((s) => s.activeDimensionId)
+  const activeDimIds = useDimensionStore((s) => s.activeDimensionIds)
   const gridRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const now = new Date()
+      const targetHour = Math.max(0, now.getHours() - 1)
+      scrollContainerRef.current.scrollTop = targetHour * HOUR_HEIGHT
+    }
+  }, [])
+
 
   const {
     handleEventClick,
@@ -465,10 +496,10 @@ function WeekGrid({ interactions }: WeekGridProps) {
   const filteredEvents = useMemo(() => {
     return events.filter((e) => {
       const inWeek = e.startAt >= weekStart && e.startAt < weekEnd
-      const dimMatch = activeDimensionId === null || e.dimensionId === activeDimensionId
+      const dimMatch = activeDimIds.length === 0 || activeDimIds.includes(e.dimensionId)
       return inWeek && dimMatch
     })
-  }, [events, weekStart.getTime(), weekEnd.getTime(), activeDimensionId])
+  }, [events, weekStart.getTime(), weekEnd.getTime(), activeDimIds])
 
   const eventsByDay = useMemo(() => {
     const result: CalendarEvent[][] = Array.from({ length: 7 }, () => [])
@@ -564,11 +595,11 @@ function WeekGrid({ interactions }: WeekGridProps) {
   }, [handleMoveStart])
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
       <div
         ref={gridRef}
         className="grid grid-cols-[56px_repeat(7,1fr)] relative select-none"
-        style={{ height: `${17 * HOUR_HEIGHT}px` }}
+        style={{ height: `${HOURS.length * HOUR_HEIGHT}px` }}
         onMouseLeave={() => {
           // No-op: global window handlers manage all drag operations
         }}
@@ -742,6 +773,7 @@ export default function CalendarPage() {
           <DimensionTabs />
           <CalendarNav />
         </div>
+        {calendarView === 'day' && <DayHeader />}
         {calendarView === 'week' && <WeekHeader />}
         <div className="relative flex-1 flex flex-col overflow-hidden">
           <SuggestionPrompt />
@@ -776,7 +808,7 @@ export default function CalendarPage() {
           startHour={createCard.startHour}
           endHour={createCard.endHour}
           anchorRect={createCard.anchorRect}
-          onClose={closeCreateCard}
+          onClose={() => { closeCreateCard(); interactions.clearDragSelection() }}
         />
       )}
     </>

@@ -1,4 +1,9 @@
-import { Briefcase, BookOpen, Film, Dumbbell, type LucideProps } from 'lucide-react'
+import {
+  Briefcase, BookOpen, Film, Dumbbell,
+  Music, Palette, Heart, Star, Zap, Coffee,
+  Gamepad2, Plane, ShoppingBag, Code, Camera,
+  type LucideProps,
+} from 'lucide-react'
 import type { ComponentType } from 'react'
 
 const iconMap: Record<string, ComponentType<LucideProps>> = {
@@ -6,6 +11,17 @@ const iconMap: Record<string, ComponentType<LucideProps>> = {
   BookOpen,
   Film,
   Dumbbell,
+  Music,
+  Palette,
+  Heart,
+  Star,
+  Zap,
+  Coffee,
+  Gamepad2,
+  Plane,
+  ShoppingBag,
+  Code,
+  Camera,
 }
 
 interface DimensionIconProps extends LucideProps {

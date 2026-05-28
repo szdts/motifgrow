@@ -95,6 +95,7 @@ export interface CalendarInteractionsReturn {
   closeEditModal: () => void
   closeCreateCard: () => void
   closeDragSelection: () => void
+  clearDragSelection: () => void
 }
 
 function snapToQuarter(hour: number): number {
@@ -155,6 +156,7 @@ export function useCalendarInteractions(): CalendarInteractionsReturn {
   const closeEditModal = useCallback(() => setEditModalEventId(null), [])
   const closeCreateCard = useCallback(() => setCreateCard(null), [])
   const closeDragSelection = useCallback(() => setDragSelection(null), [])
+  const clearDragSelection = useCallback(() => setDragSelection(null), [])
 
   // --- Change 1 & 3: Event click (popover) vs double-click (edit modal) ---
   const handleEventClick = useCallback((eventId: string, e: React.MouseEvent) => {
@@ -291,7 +293,7 @@ export function useCalendarInteractions(): CalendarInteractionsReturn {
         },
       })
 
-      return null
+      return prev
     })
   }, [])
 
@@ -505,5 +507,6 @@ export function useCalendarInteractions(): CalendarInteractionsReturn {
     closeEditModal,
     closeCreateCard,
     closeDragSelection,
+    clearDragSelection,
   }
 }

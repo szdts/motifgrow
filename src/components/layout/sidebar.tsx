@@ -6,13 +6,19 @@ import { useOKRStore } from '@/stores/okr-store'
 import { useDimensionStore } from '@/stores/dimension-store'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DimensionIcon } from '@/components/ui/dimension-icon'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, ChevronLeft, ChevronRight, PanelLeftClose } from 'lucide-react'
 
 function MiniCalendar() {
   const today = new Date()
+  const currentDate = useUIStore((s) => s.currentDate)
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
+
+  useEffect(() => {
+    setViewYear(currentDate.getFullYear())
+    setViewMonth(currentDate.getMonth())
+  }, [currentDate])
 
   const firstDay = new Date(viewYear, viewMonth, 1).getDay()
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
@@ -64,15 +70,18 @@ function MiniCalendar() {
         ))}
         {blanks.map((i) => <div key={`b-${i}`} />)}
         {days.map((d) => {
+          const isSelected = d === currentDate.getDate() && viewMonth === currentDate.getMonth() && viewYear === currentDate.getFullYear()
           const isToday = d === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear()
           return (
             <button
               key={d}
               onClick={() => handleDayClick(d)}
               className={`text-[11px] w-7 h-7 mx-auto flex items-center justify-center rounded-full transition-all duration-150 ${
-                isToday
+                isSelected
                   ? 'bg-[#0071e3] text-white font-semibold shadow-[0_1px_4px_rgba(0,113,227,0.3)]'
-                  : 'text-[#1d1d1f] hover:bg-black/[0.04]'
+                  : isToday
+                    ? 'text-[#0071e3] font-semibold hover:bg-black/[0.04]'
+                    : 'text-[#1d1d1f] hover:bg-black/[0.04]'
               }`}
             >
               {d}
@@ -135,11 +144,11 @@ function QuotaBars() {
 function BacklogQuickList() {
   const items = useBacklogStore((s) => s.items)
   const dimensions = useDimensionStore((s) => s.dimensions)
-  const activeDim = useDimensionStore((s) => s.activeDimensionId)
+  const activeDimIds = useDimensionStore((s) => s.activeDimensionIds)
 
   const filtered = items
     .filter((i) => i.status !== 'completed' && i.status !== 'dropped')
-    .filter((i) => !activeDim || i.dimensionId === activeDim)
+    .filter((i) => activeDimIds.length === 0 || activeDimIds.includes(i.dimensionId))
     .slice(0, 4)
 
   const focusLabels = { deep: '深度', shallow: '浅度', relaxing: '放松' } as const

@@ -3,8 +3,10 @@ import type { Dimension } from '@/types'
 
 interface DimensionState {
   dimensions: Dimension[]
-  activeDimensionId: string | null // null = "All" tab
-  setActiveDimension: (id: string | null) => void
+  activeDimensionIds: string[] // empty = show all (same as "全部")
+  toggleDimension: (id: string) => void
+  resetToAll: () => void
+  addDimension: (dim: Dimension) => void
 }
 
 export const useDimensionStore = create<DimensionState>((set) => ({
@@ -14,6 +16,14 @@ export const useDimensionStore = create<DimensionState>((set) => ({
     { id: 'entertainment', name: '娱乐', icon: 'Film', color: '#bf4800', sortOrder: 2 },
     { id: 'fitness', name: '健身', icon: 'Dumbbell', color: '#248a3d', sortOrder: 3 },
   ],
-  activeDimensionId: null,
-  setActiveDimension: (id) => set({ activeDimensionId: id }),
+  activeDimensionIds: [],
+  toggleDimension: (id) =>
+    set((s) => ({
+      activeDimensionIds: s.activeDimensionIds.includes(id)
+        ? s.activeDimensionIds.filter((x) => x !== id)
+        : [...s.activeDimensionIds, id],
+    })),
+  resetToAll: () => set({ activeDimensionIds: [] }),
+  addDimension: (dim) =>
+    set((s) => ({ dimensions: [...s.dimensions, dim] })),
 }))
