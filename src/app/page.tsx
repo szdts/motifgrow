@@ -573,6 +573,9 @@ function WeekGrid({ interactions }: WeekGridProps) {
 
   return (
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+      <div className="sticky top-0 z-10 bg-white">
+        <WeekHeader />
+      </div>
       <div
         ref={gridRef}
         className="grid grid-cols-[56px_repeat(7,1fr)] relative select-none"
@@ -752,7 +755,6 @@ export default function CalendarPage() {
         </div>
         <div className="relative flex-1 flex flex-col overflow-hidden">
           <SuggestionPrompt />
-          {calendarView === 'week' && <WeekHeader />}
           {calendarView === 'day' && <DayView />}
           {calendarView === 'week' && <WeekGrid interactions={interactions} />}
           {calendarView === 'month' && <MonthView />}
