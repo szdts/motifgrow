@@ -1,12 +1,14 @@
 'use client'
 
 import { useMemo, useEffect, useState, useRef, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Sidebar } from '@/components/layout/sidebar'
 import { DimensionTabs } from '@/components/layout/dimension-tabs'
 import { useUIStore } from '@/stores/ui-store'
 import { useCalendarStore } from '@/stores/calendar-store'
 import { useDimensionStore } from '@/stores/dimension-store'
-import { ChevronLeft, ChevronRight, Check, X, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Check, X, Clock, PanelLeftOpen } from 'lucide-react'
+import { DatePickerPopover } from '@/components/calendar/date-picker-popover'
 import { DayView } from '@/components/calendar/day-view'
 import { MonthView } from '@/components/calendar/month-view'
 import { EventPopover } from '@/components/calendar/event-popover'
@@ -54,7 +56,12 @@ function CalendarNav() {
             <ChevronRight size={16} strokeWidth={1.5} />
           </button>
         </div>
-        <span className="text-[15px] font-semibold tracking-[-0.02em] text-[#1d1d1f]">{formatDateRange()}</span>
+        <DatePickerPopover>
+          <button className="flex items-center gap-1 text-[15px] font-semibold tracking-[-0.02em] text-[#1d1d1f] hover:bg-black/[0.03] rounded-lg px-2 py-1 transition-colors">
+            {formatDateRange()}
+            <ChevronDown size={14} strokeWidth={1.5} className="text-[rgba(0,0,0,0.3)]" />
+          </button>
+        </DatePickerPopover>
       </div>
 
       <div className="flex items-center rounded-full bg-black/[0.04] p-0.5">
@@ -337,59 +344,76 @@ function CurrentTimeLine() {
 }
 
 function SuggestionPrompt() {
+  const [dismissed, setDismissed] = useState(false)
   const events = useCalendarStore((s) => s.events)
   const dimensions = useDimensionStore((s) => s.dimensions)
   const confirmSuggestion = useCalendarStore((s) => s.confirmSuggestion)
   const dismissSuggestion = useCalendarStore((s) => s.dismissSuggestion)
 
   const suggestion = events.find((e) => e.eventType === 'suggestion')
-  if (!suggestion) return null
-
-  const dim = dimensions.find((d) => d.id === suggestion.dimensionId)
+  const dim = suggestion ? dimensions.find((d) => d.id === suggestion.dimensionId) : null
   const color = dim?.color ?? '#86868b'
 
   const formatTime = (d: Date) =>
     `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 
+  const isVisible = !!suggestion && !dismissed
+
   return (
-    <div className="mx-5 mb-3">
-      <div
-        className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-[rgba(0,0,0,0.04)_0_1px_3px,rgba(0,0,0,0.08)_0_1px_2px]"
-        style={{ borderLeft: `3px solid ${color}` }}
-      >
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <Clock size={14} className="text-black/[0.36]" />
-            <span className="text-[11px] text-black/[0.36] tracking-[-0.01em]">
-              C 层建议
-            </span>
-          </div>
-          <div className="text-[14px] font-medium text-[#1d1d1f] tracking-[-0.01em] truncate">
-            {suggestion.title}
-          </div>
-          <div className="text-[12px] text-[rgba(0,0,0,0.48)] mt-0.5">
-            {formatTime(suggestion.startAt)} - {formatTime(suggestion.endAt)}
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={() => confirmSuggestion(suggestion.id)}
-            className="rounded-full bg-[#0071e3] px-3.5 py-1.5 text-[12px] font-medium text-white hover:bg-[#0077ED] transition-colors"
+    <AnimatePresence>
+      {isVisible && suggestion && (
+        <motion.div
+          initial={{ opacity: 0, y: -16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -16 }}
+          transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-20 w-max max-w-[90%]"
+        >
+          <div
+            className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-[rgba(0,0,0,0.04)_0_1px_3px,rgba(0,0,0,0.08)_0_1px_2px]"
+            style={{ borderLeft: `3px solid ${color}` }}
           >
-            接受
-          </button>
-          <button
-            onClick={() => dismissSuggestion(suggestion.id)}
-            className="rounded-full border border-black/[0.08] px-3.5 py-1.5 text-[12px] font-medium text-[rgba(0,0,0,0.48)] hover:text-[#1d1d1f] hover:border-black/[0.15] transition-all duration-150"
-          >
-            忽略
-          </button>
-          <button className="rounded-full border border-black/[0.08] px-3.5 py-1.5 text-[12px] font-medium text-[rgba(0,0,0,0.48)] hover:text-[#1d1d1f] hover:border-black/[0.15] transition-all duration-150">
-            改时间
-          </button>
-        </div>
-      </div>
-    </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock size={14} className="text-black/[0.36]" />
+                <span className="text-[11px] text-black/[0.36] tracking-[-0.01em]">
+                  C 层建议
+                </span>
+              </div>
+              <div className="text-[14px] font-medium text-[#1d1d1f] tracking-[-0.01em] truncate">
+                {suggestion.title}
+              </div>
+              <div className="text-[12px] text-[rgba(0,0,0,0.48)] mt-0.5">
+                {formatTime(suggestion.startAt)} - {formatTime(suggestion.endAt)}
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => confirmSuggestion(suggestion.id)}
+                className="rounded-full bg-[#0071e3] px-3.5 py-1.5 text-[12px] font-medium text-white hover:bg-[#0077ED] transition-colors"
+              >
+                接受
+              </button>
+              <button
+                onClick={() => dismissSuggestion(suggestion.id)}
+                className="rounded-full border border-black/[0.08] px-3.5 py-1.5 text-[12px] font-medium text-[rgba(0,0,0,0.48)] hover:text-[#1d1d1f] hover:border-black/[0.15] transition-all duration-150"
+              >
+                忽略
+              </button>
+              <button className="rounded-full border border-black/[0.08] px-3.5 py-1.5 text-[12px] font-medium text-[rgba(0,0,0,0.48)] hover:text-[#1d1d1f] hover:border-black/[0.15] transition-all duration-150">
+                改时间
+              </button>
+              <button
+                onClick={() => setDismissed(true)}
+                className="w-6 h-6 flex items-center justify-center rounded-full text-[rgba(0,0,0,0.3)] hover:text-[#1d1d1f] hover:bg-black/[0.04] transition-colors"
+              >
+                <X size={14} strokeWidth={1.5} />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -700,19 +724,31 @@ export default function CalendarPage() {
     }, 50)
   }, [closePopover, interactions])
 
+  const sidebarOpen = useUIStore((s) => s.sidebarOpen)
+
   return (
     <>
       <Sidebar />
-      <main className="flex-1 flex flex-col overflow-hidden bg-white">
+      <main className="flex-1 flex flex-col overflow-hidden bg-white relative">
+        {!sidebarOpen && (
+          <button
+            onClick={() => useUIStore.getState().toggleSidebar()}
+            className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-6 h-10 flex items-center justify-center rounded-r-md bg-white border border-l-0 border-black/[0.06] text-[rgba(0,0,0,0.3)] hover:text-[#1d1d1f] hover:bg-black/[0.02] transition-all duration-200"
+          >
+            <PanelLeftOpen size={13} strokeWidth={1.5} />
+          </button>
+        )}
         <div className="px-5 pt-4 pb-3 space-y-3">
           <DimensionTabs />
           <CalendarNav />
         </div>
         {calendarView === 'week' && <WeekHeader />}
-        <SuggestionPrompt />
-        {calendarView === 'day' && <DayView />}
-        {calendarView === 'week' && <WeekGrid interactions={interactions} />}
-        {calendarView === 'month' && <MonthView />}
+        <div className="relative flex-1 flex flex-col overflow-hidden">
+          <SuggestionPrompt />
+          {calendarView === 'day' && <DayView />}
+          {calendarView === 'week' && <WeekGrid interactions={interactions} />}
+          {calendarView === 'month' && <MonthView />}
+        </div>
       </main>
 
       {/* Anchored popover (Change 1) */}

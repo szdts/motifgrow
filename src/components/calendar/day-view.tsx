@@ -239,7 +239,6 @@ export function DayView() {
   }, [])
 
   const isToday = currentDate.toDateString() === now.toDateString()
-  const dayLabels = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
 
   const dayStart = new Date(currentDate)
   dayStart.setHours(0, 0, 0, 0)
@@ -616,31 +615,6 @@ export function DayView() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-      {/* Day header */}
-      <div className="grid grid-cols-[56px_1fr] border-b border-black/[0.06]">
-        <div />
-        <div className="flex flex-col items-center py-2.5">
-          <span
-            className={`text-[11px] tracking-[0.01em] ${
-              isToday
-                ? 'text-[#0071e3] font-semibold'
-                : 'text-[rgba(0,0,0,0.36)]'
-            }`}
-          >
-            {dayLabels[currentDate.getDay()]}
-          </span>
-          <span
-            className={`mt-1 text-[18px] font-medium tracking-[-0.02em] w-8 h-8 flex items-center justify-center rounded-full ${
-              isToday
-                ? 'bg-[#0071e3] text-white shadow-[0_1px_4px_rgba(0,113,227,0.3)]'
-                : 'text-[#1d1d1f]'
-            }`}
-          >
-            {currentDate.getDate()}
-          </span>
-        </div>
-      </div>
-
       {/* Time grid */}
       <div
         ref={gridRef}

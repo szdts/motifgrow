@@ -6,28 +6,56 @@ import { useOKRStore } from '@/stores/okr-store'
 import { useDimensionStore } from '@/stores/dimension-store'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DimensionIcon } from '@/components/ui/dimension-icon'
-import { Plus } from 'lucide-react'
+import { useState } from 'react'
+import { Plus, ChevronLeft, ChevronRight, PanelLeftClose } from 'lucide-react'
 
 function MiniCalendar() {
   const today = new Date()
-  const year = 2026
-  const month = 4 // May (0-indexed)
-  const firstDay = new Date(year, month, 1).getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const [viewYear, setViewYear] = useState(today.getFullYear())
+  const [viewMonth, setViewMonth] = useState(today.getMonth())
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay()
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
 
   const dayLabels = ['日', '一', '二', '三', '四', '五', '六']
   const blanks = Array.from({ length: firstDay }, (_, i) => i)
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1)
 
+  const handlePrevMonth = () => {
+    if (viewMonth === 0) {
+      setViewYear(viewYear - 1)
+      setViewMonth(11)
+    } else {
+      setViewMonth(viewMonth - 1)
+    }
+  }
+
+  const handleNextMonth = () => {
+    if (viewMonth === 11) {
+      setViewYear(viewYear + 1)
+      setViewMonth(0)
+    } else {
+      setViewMonth(viewMonth + 1)
+    }
+  }
+
+  const handleDayClick = (day: number) => {
+    useUIStore.getState().setCurrentDate(new Date(viewYear, viewMonth, day))
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
         <span className="text-[13px] font-semibold tracking-[-0.01em] text-[#1d1d1f]">
-          {year}年{month + 1}月
+          {viewYear}年{viewMonth + 1}月
         </span>
         <div className="flex gap-0.5">
-          <button className="w-6 h-6 flex items-center justify-center rounded-md text-[rgba(0,0,0,0.3)] hover:bg-black/[0.04] transition-colors text-[11px]">◀</button>
-          <button className="w-6 h-6 flex items-center justify-center rounded-md text-[rgba(0,0,0,0.3)] hover:bg-black/[0.04] transition-colors text-[11px]">▶</button>
+          <button onClick={handlePrevMonth} className="w-6 h-6 flex items-center justify-center rounded-md text-[rgba(0,0,0,0.3)] hover:bg-black/[0.04] transition-colors">
+            <ChevronLeft size={14} strokeWidth={1.5} />
+          </button>
+          <button onClick={handleNextMonth} className="w-6 h-6 flex items-center justify-center rounded-md text-[rgba(0,0,0,0.3)] hover:bg-black/[0.04] transition-colors">
+            <ChevronRight size={14} strokeWidth={1.5} />
+          </button>
         </div>
       </div>
       <div className="grid grid-cols-7 gap-y-0.5 text-center">
@@ -36,10 +64,11 @@ function MiniCalendar() {
         ))}
         {blanks.map((i) => <div key={`b-${i}`} />)}
         {days.map((d) => {
-          const isToday = d === today.getDate() && month === today.getMonth() && year === today.getFullYear()
+          const isToday = d === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear()
           return (
             <button
               key={d}
+              onClick={() => handleDayClick(d)}
               className={`text-[11px] w-7 h-7 mx-auto flex items-center justify-center rounded-full transition-all duration-150 ${
                 isToday
                   ? 'bg-[#0071e3] text-white font-semibold shadow-[0_1px_4px_rgba(0,113,227,0.3)]'
@@ -82,8 +111,9 @@ function QuotaBars() {
         {quotas.map((q) => (
           <div key={q.name}>
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[12px] font-medium text-[#1d1d1f] tracking-[-0.01em]">
-                <DimensionIcon name={q.icon} size={13} strokeWidth={1.5} /> {q.name}
+              <span className="flex items-center gap-1.5 text-[12px] font-medium text-[#1d1d1f] tracking-[-0.01em]">
+                <DimensionIcon name={q.icon} size={13} strokeWidth={1.5} />
+                {q.name}
               </span>
               <span className="text-[11px] tabular-nums text-[rgba(0,0,0,0.36)]">
                 {q.current}/{q.target}{q.unit}
@@ -155,20 +185,38 @@ function BacklogQuickList() {
 
 export function Sidebar() {
   const sidebarOpen = useUIStore((s) => s.sidebarOpen)
-
-  if (!sidebarOpen) return null
+  const toggleSidebar = useUIStore((s) => s.toggleSidebar)
 
   return (
-    <aside className="w-[260px] shrink-0 border-r border-black/[0.06] bg-white/60" style={{ backdropFilter: 'blur(10px)' }}>
-      <ScrollArea className="h-full">
-        <div className="p-5 space-y-6">
-          <MiniCalendar />
-          <div className="h-px bg-black/[0.06]" />
-          <QuotaBars />
-          <div className="h-px bg-black/[0.06]" />
-          <BacklogQuickList />
-        </div>
-      </ScrollArea>
+    <aside
+      className="shrink-0 border-r border-black/[0.06] bg-white/60 transition-all duration-200 overflow-hidden"
+      style={{
+        backdropFilter: 'blur(10px)',
+        width: sidebarOpen ? '260px' : '0px',
+        minWidth: sidebarOpen ? '260px' : '0px',
+        borderRightWidth: sidebarOpen ? '1px' : '0px',
+      }}
+    >
+      <div className="w-[260px]">
+        <ScrollArea className="h-full">
+          <div className="p-5 space-y-6">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold tracking-[0.02em] uppercase text-[rgba(0,0,0,0.3)]">侧栏</span>
+              <button
+                onClick={toggleSidebar}
+                className="w-6 h-6 flex items-center justify-center rounded-md text-[rgba(0,0,0,0.3)] hover:text-[#1d1d1f] hover:bg-black/[0.04] transition-colors"
+              >
+                <PanelLeftClose size={14} strokeWidth={1.5} />
+              </button>
+            </div>
+            <MiniCalendar />
+            <div className="h-px bg-black/[0.06]" />
+            <QuotaBars />
+            <div className="h-px bg-black/[0.06]" />
+            <BacklogQuickList />
+          </div>
+        </ScrollArea>
+      </div>
     </aside>
   )
 }
