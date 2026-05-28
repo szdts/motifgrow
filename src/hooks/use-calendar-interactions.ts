@@ -5,7 +5,7 @@ import { useCalendarStore } from '@/stores/calendar-store'
 
 // ---- Shared constants ----
 const HOUR_HEIGHT = 56
-const GRID_START_HOUR = 7
+const GRID_START_HOUR = 0
 const SNAP_MINUTES = 15
 const SINGLE_CLICK_DELAY = 250
 const MIN_DRAG_DISTANCE = 4

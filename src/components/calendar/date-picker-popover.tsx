@@ -52,7 +52,7 @@ export function DatePickerPopover({ children }: DatePickerPopoverProps) {
   const firstDay = new Date(viewYear, viewMonth, 1).getDay()
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
   const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate()
-  const dayLabels = ['\u65E5', '\u4E00', '\u4E8C', '\u4E09', '\u56DB', '\u4E94', '\u516D']
+  const dayLabels = ['日', '一', '二', '三', '四', '五', '六']
   const today = new Date()
 
   const cells: { day: number; isCurrentMonth: boolean; date: Date }[] = []
@@ -85,7 +85,7 @@ export function DatePickerPopover({ children }: DatePickerPopoverProps) {
   const isSelected = (date: Date) =>
     date.getDate() === currentDate.getDate() && date.getMonth() === currentDate.getMonth() && date.getFullYear() === currentDate.getFullYear()
 
-  const months = ['1\u6708', '2\u6708', '3\u6708', '4\u6708', '5\u6708', '6\u6708', '7\u6708', '8\u6708', '9\u6708', '10\u6708', '11\u6708', '12\u6708']
+  const months = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
 
   return (
     <Popover open={open} onOpenChange={(nextOpen) => setOpen(nextOpen)}>
@@ -96,7 +96,7 @@ export function DatePickerPopover({ children }: DatePickerPopoverProps) {
         {calendarView === 'month' ? (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[14px] font-semibold text-[#1d1d1f]">{viewYear}\u5E74</span>
+              <span className="text-[14px] font-semibold text-[#1d1d1f]">{viewYear}年</span>
               <div className="flex gap-0.5">
                 <button onClick={() => setViewYear(viewYear - 1)} className="w-6 h-6 flex items-center justify-center rounded-md text-[rgba(0,0,0,0.3)] hover:bg-black/[0.04]">
                   <ChevronLeft size={14} />
@@ -125,13 +125,13 @@ export function DatePickerPopover({ children }: DatePickerPopoverProps) {
               })}
             </div>
             <button onClick={handleToday} className="mt-3 w-full text-center text-[13px] text-[#0071e3] font-medium hover:underline">
-              \u4ECA\u5929
+              今天
             </button>
           </div>
         ) : (
           <div>
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[14px] font-semibold text-[#1d1d1f]">{viewYear}\u5E74 {viewMonth + 1}\u6708</span>
+              <span className="text-[14px] font-semibold text-[#1d1d1f]">{viewYear}年 {viewMonth + 1}月</span>
               <div className="flex gap-0.5">
                 <button onClick={handlePrevMonth} className="w-6 h-6 flex items-center justify-center rounded-md text-[rgba(0,0,0,0.3)] hover:bg-black/[0.04]">
                   <ChevronLeft size={14} />
@@ -167,7 +167,7 @@ export function DatePickerPopover({ children }: DatePickerPopoverProps) {
               })}
             </div>
             <button onClick={handleToday} className="mt-3 w-full text-center text-[13px] text-[#0071e3] font-medium hover:underline">
-              \u4ECA\u5929
+              今天
             </button>
           </div>
         )}
