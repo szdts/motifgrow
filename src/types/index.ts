@@ -86,3 +86,12 @@ export interface QuarterlyReviewData {
   topAchievements: string[]
   completionRate: number
 }
+
+export interface User {
+  id: string
+  email: string
+  name: string
+  avatarUrl: string | null
+  plan: 'free' | 'pro'
+  createdAt: string
+}

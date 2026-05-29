@@ -3,16 +3,17 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Calendar, BookOpen, Target, BarChart3, Settings, Search, X } from 'lucide-react'
+import { Calendar, BookOpen, Target, BarChart3, Settings, Search, X, LogOut, Crown } from 'lucide-react'
 import { useBacklogStore } from '@/stores/backlog-store'
 import { useOKRStore } from '@/stores/okr-store'
 import { useCalendarStore } from '@/stores/calendar-store'
+import { useAuthStore } from '@/stores/auth-store'
 
 const navItems = [
-  { href: '/', label: '\u65E5\u5386', icon: Calendar },
-  { href: '/library', label: '\u5A92\u4F53\u5E93', icon: BookOpen },
-  { href: '/goals', label: '\u76EE\u6807', icon: Target },
-  { href: '/review', label: '\u56DE\u987E', icon: BarChart3 },
+  { href: '/', label: '日历', icon: Calendar },
+  { href: '/library', label: '媒体库', icon: BookOpen },
+  { href: '/goals', label: '目标', icon: Target },
+  { href: '/review', label: '回顾', icon: BarChart3 },
 ]
 
 interface SearchResult {
@@ -39,12 +40,12 @@ function SearchButton() {
 
     for (const item of backlogItems) {
       if (item.title.toLowerCase().includes(q)) {
-        matches.push({ title: item.title, type: '\u5A92\u4F53', color: '#bf4800', href: '/library' })
+        matches.push({ title: item.title, type: '媒体', color: '#bf4800', href: '/library' })
       }
     }
     for (const obj of objectives) {
       if (obj.title.toLowerCase().includes(q)) {
-        matches.push({ title: obj.title, type: '\u76EE\u6807', color: '#0071e3', href: '/goals' })
+        matches.push({ title: obj.title, type: '目标', color: '#0071e3', href: '/goals' })
       }
       for (const kr of obj.keyResults) {
         if (kr.title.toLowerCase().includes(q)) {
@@ -54,7 +55,7 @@ function SearchButton() {
     }
     for (const evt of events) {
       if (evt.title.toLowerCase().includes(q)) {
-        matches.push({ title: evt.title, type: '\u65E5\u7A0B', color: '#86868b', href: '/' })
+        matches.push({ title: evt.title, type: '日程', color: '#86868b', href: '/' })
       }
     }
     return matches.slice(0, 5)
@@ -113,7 +114,7 @@ function SearchButton() {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="\u641C\u7D22\u5A92\u4F53\u3001\u76EE\u6807\u3001\u65E5\u7A0B..."
+          placeholder="搜索媒体、目标、日程..."
           className="bg-transparent text-[13px] text-[#1d1d1f] placeholder:text-[rgba(0,0,0,0.3)] outline-none w-[200px] tracking-[-0.01em]"
         />
         <button
@@ -129,7 +130,7 @@ function SearchButton() {
         <div className="absolute top-full mt-1.5 right-0 w-[280px] rounded-xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-black/[0.06] overflow-hidden z-50">
           {results.length === 0 ? (
             <div className="px-4 py-6 text-center">
-              <div className="text-[13px] text-[rgba(0,0,0,0.36)]">{'\u65E0\u5339\u914D\u7ED3\u679C'}</div>
+              <div className="text-[13px] text-[rgba(0,0,0,0.36)]">无匹配结果</div>
             </div>
           ) : (
             <div className="py-1.5">
@@ -157,6 +158,114 @@ function SearchButton() {
               ))}
             </div>
           )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function UserMenu() {
+  const user = useAuthStore((s) => s.user)
+  const logout = useAuthStore((s) => s.logout)
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
+
+  const handleClose = useCallback(() => setOpen(false), [])
+
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        handleClose()
+      }
+    }
+    window.addEventListener('mousedown', handler)
+    return () => window.removeEventListener('mousedown', handler)
+  }, [open, handleClose])
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleClose()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [open, handleClose])
+
+  if (!user) {
+    return (
+      <Link
+        href="/login"
+        className="rounded-full bg-[#0071e3] px-3.5 py-1 text-[12px] font-medium text-white hover:bg-[#0077ED] transition-colors"
+      >
+        登录
+      </Link>
+    )
+  }
+
+  const initial = (user.name || user.email)[0].toUpperCase()
+
+  const handleLogout = () => {
+    logout()
+    handleClose()
+    router.push('/login')
+  }
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-7 h-7 rounded-full bg-gradient-to-br from-[#0071e3] to-[#40a0ff] flex items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-[0_0_0_2px_rgba(0,113,227,0.3)] overflow-hidden"
+      >
+        {user.avatarUrl ? (
+          <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-[11px] font-semibold text-white leading-none select-none">
+            {initial}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute top-full mt-1.5 right-0 w-[200px] rounded-xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-black/[0.06] overflow-hidden z-50">
+          {/* User info */}
+          <div className="px-3.5 pt-3 pb-2">
+            <div className="text-[13px] font-medium text-[#1d1d1f] truncate">{user.name}</div>
+            <div className="text-[11px] text-[#86868b] truncate">{user.email}</div>
+          </div>
+          <div className="mx-3 h-px bg-black/[0.06]" />
+          {/* Menu items */}
+          <div className="py-1">
+            <button
+              onClick={() => { router.push('/settings'); handleClose() }}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-[#1d1d1f] hover:bg-black/[0.03] transition-colors text-left"
+            >
+              <Settings size={14} strokeWidth={1.5} className="text-[rgba(0,0,0,0.36)]" />
+              账号设置
+            </button>
+            {user.plan === 'free' && (
+              <button
+                onClick={() => { router.push('/pricing'); handleClose() }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-[#1d1d1f] hover:bg-black/[0.03] transition-colors text-left"
+              >
+                <Crown size={14} strokeWidth={1.5} className="text-[#bf8f00]" />
+                升级 Pro
+              </button>
+            )}
+          </div>
+          <div className="mx-3 h-px bg-black/[0.06]" />
+          <div className="py-1">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] text-[#ff3b30] hover:bg-black/[0.03] transition-colors text-left"
+            >
+              <LogOut size={14} strokeWidth={1.5} />
+              退出登录
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -202,9 +311,7 @@ export function TopNav() {
           >
             <Settings size={16} strokeWidth={1.5} />
           </Link>
-          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#0071e3] to-[#40a0ff] flex items-center justify-center">
-            <span className="text-[11px] font-semibold text-white leading-none">W</span>
-          </div>
+          <UserMenu />
         </div>
       </div>
     </header>

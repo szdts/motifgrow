@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TopNav } from "@/components/layout/top-nav";
+import { AuthProvider } from "@/components/auth/auth-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -24,10 +25,12 @@ export default function RootLayout({
     <html lang="zh-CN" className={`${inter.variable} h-full antialiased`}>
       <body className="h-full flex flex-col font-sans bg-[#f5f5f7]">
         <TooltipProvider>
-          <TopNav />
-          <div className="flex flex-1 overflow-hidden">
-            {children}
-          </div>
+          <AuthProvider>
+            <TopNav />
+            <div className="flex flex-1 overflow-hidden">
+              {children}
+            </div>
+          </AuthProvider>
         </TooltipProvider>
       </body>
     </html>
