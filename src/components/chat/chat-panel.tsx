@@ -243,7 +243,7 @@ export function ChatPanel() {
         type="button"
         onClick={toggleOpen}
         aria-label="打开 AI 对话"
-        className={`fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#0071e3] shadow-lg hover:scale-110 transition-all duration-200 cursor-pointer ${
+        className={`fixed bottom-20 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-[#0071e3] shadow-lg hover:scale-110 transition-all duration-200 cursor-pointer ${
           isOpen
             ? 'pointer-events-none scale-0 opacity-0'
             : 'scale-100 opacity-100'
@@ -254,7 +254,7 @@ export function ChatPanel() {
 
       {/* ---------- Chat panel ---------- */}
       <div
-        className={`fixed bottom-5 right-5 z-50 flex w-[380px] max-h-[70vh] h-[560px] flex-col rounded-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-black/[0.06] transition-all duration-250 origin-bottom-right ${
+        className={`fixed bottom-20 right-5 z-50 flex w-[380px] max-h-[70vh] h-[560px] flex-col rounded-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-black/[0.06] transition-all duration-250 origin-bottom-right ${
           isOpen
             ? 'scale-100 opacity-100 pointer-events-auto'
             : 'scale-90 opacity-0 pointer-events-none'
