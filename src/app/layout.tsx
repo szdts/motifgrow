@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TopNav } from "@/components/layout/top-nav";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { ChatPanel } from "@/components/chat/chat-panel";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,6 +32,7 @@ export default function RootLayout({
               {children}
             </div>
           </AuthProvider>
+          <ChatPanel />
         </TooltipProvider>
       </body>
     </html>
