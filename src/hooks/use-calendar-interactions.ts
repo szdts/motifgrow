@@ -126,6 +126,7 @@ export function useCalendarInteractions(): CalendarInteractionsReturn {
   // ---- Drag-to-create selection ----
   const [dragSelection, setDragSelection] = useState<DragSelectionState | null>(null)
   const isDraggingRef = useRef(false)
+  const dragPendingRef = useRef(false)
   const dragWasDraggingRef = useRef(false)
   const dragStartYRef = useRef(0)
   const dragDayDateRef = useRef<Date>(new Date())
@@ -239,18 +240,18 @@ export function useCalendarInteractions(): CalendarInteractionsReturn {
     dragDayDateRef.current = dayDate
     dragDayIndexRef.current = dayIndex
     dragGridRectRef.current = gridRect
-    movePendingRef.current = true
+    dragPendingRef.current = true
   }, [])
 
   const handleGridMouseMove = useCallback((currentY: number) => {
-    if (!movePendingRef.current && !isDraggingRef.current) return
+    if (!dragPendingRef.current && !isDraggingRef.current) return
     if (isResizingRef.current || isMovingRef.current) return
 
     const delta = Math.abs(currentY - dragStartYRef.current)
     if (!isDraggingRef.current && delta < MIN_DRAG_DISTANCE) return
 
     isDraggingRef.current = true
-    movePendingRef.current = false
+    dragPendingRef.current = false
 
     const startHour = clampHour(snapToQuarter(pixelToHour(dragStartYRef.current)))
     const endHour = clampHour(snapToQuarter(pixelToHour(currentY)))
@@ -268,7 +269,7 @@ export function useCalendarInteractions(): CalendarInteractionsReturn {
   }, [])
 
   const handleGridMouseUp = useCallback((gridRect: AnchorRect) => {
-    movePendingRef.current = false
+    dragPendingRef.current = false
 
     if (!isDraggingRef.current) return
     isDraggingRef.current = false
