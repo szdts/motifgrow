@@ -378,8 +378,8 @@ export function useCalendarInteractions(): CalendarInteractionsReturn {
 
   // --- Change 6: Drag event body -> move to other time/day ---
   const handleMoveStart = useCallback((eventId: string, e: React.MouseEvent, gridRect: AnchorRect) => {
-    e.stopPropagation()
-    e.preventDefault()
+    // Don't stopPropagation/preventDefault — they can block subsequent click events
+    // Grid slot mousedown already guards via closest('[data-event-block]')
 
     const events = useCalendarStore.getState().events
     const event = events.find((ev) => ev.id === eventId)

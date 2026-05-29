@@ -22,11 +22,7 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i) // 00:00 - 23:00
 const HOUR_HEIGHT = 56
 const GRID_START_HOUR = 0
 
-interface CalendarNavProps {
-  onCreateEvent: () => void
-}
-
-function CalendarNav({ onCreateEvent }: CalendarNavProps) {
+function CalendarNav() {
   const { calendarView, setCalendarView, goToToday, goForward, goBackward, currentDate } = useUIStore()
 
   const formatDateRange = () => {
@@ -69,29 +65,20 @@ function CalendarNav({ onCreateEvent }: CalendarNavProps) {
         </DatePickerPopover>
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="flex items-center rounded-full bg-black/[0.04] p-0.5">
-          {(['day', 'week', 'month'] as const).map((view) => (
-            <button
-              key={view}
-              onClick={() => setCalendarView(view)}
-              className={`rounded-full px-3 py-1 text-[12px] font-medium tracking-[-0.01em] transition-all duration-200 ${
-                calendarView === view
-                  ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                  : 'text-[rgba(0,0,0,0.4)] hover:text-[#1d1d1f]'
-              }`}
-            >
-              {{ day: '日', week: '周', month: '月' }[view]}
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={onCreateEvent}
-          className="flex items-center gap-1.5 rounded-full bg-[#0071e3] px-3.5 py-1.5 text-[12px] font-medium text-white hover:bg-[#0077ED] transition-colors shadow-[0_1px_3px_rgba(0,113,227,0.3)]"
-        >
-          <Plus size={14} strokeWidth={2} />
-          新建日程
-        </button>
+      <div className="flex items-center rounded-full bg-black/[0.04] p-0.5">
+        {(['day', 'week', 'month'] as const).map((view) => (
+          <button
+            key={view}
+            onClick={() => setCalendarView(view)}
+            className={`rounded-full px-3 py-1 text-[12px] font-medium tracking-[-0.01em] transition-all duration-200 ${
+              calendarView === view
+                ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+                : 'text-[rgba(0,0,0,0.4)] hover:text-[#1d1d1f]'
+            }`}
+          >
+            {{ day: '日', week: '周', month: '月' }[view]}
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -974,8 +961,17 @@ export default function CalendarPage() {
           </button>
         )}
         <div className="px-5 pt-4 pb-3 space-y-3">
-          <DimensionTabs />
-          <CalendarNav onCreateEvent={() => setShowQuickCreate(true)} />
+          <div className="flex items-center justify-between">
+            <DimensionTabs />
+            <button
+              onClick={() => setShowQuickCreate(true)}
+              className="flex items-center gap-1.5 rounded-full bg-[#0071e3] px-3.5 py-1.5 text-[12px] font-medium text-white hover:bg-[#0077ED] transition-colors shadow-[0_1px_3px_rgba(0,113,227,0.3)]"
+            >
+              <Plus size={14} strokeWidth={2} />
+              新建日程
+            </button>
+          </div>
+          <CalendarNav />
         </div>
         <div className="relative flex-1 flex flex-col overflow-hidden">
           <SuggestionPrompt />
