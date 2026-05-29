@@ -510,25 +510,24 @@ function WeekGrid({ interactions }: WeekGridProps) {
       const yInGrid = e.clientY - gridRect.top
       handleGridMouseMove(yInGrid)
 
-      if (moving) {
-        handleMoveMove(e.clientX, e.clientY, {
-          top: gridRect.top,
-          left: gridRect.left + 56,
-          width: gridRect.width - 56,
-          height: gridRect.height,
-          right: gridRect.right,
-          bottom: gridRect.bottom,
-        })
-      }
+      // Event move: always call — function has internal movePendingRef guard
+      // Must not gate on `moving` state, because handleMoveMove sets it
+      handleMoveMove(e.clientX, e.clientY, {
+        top: gridRect.top,
+        left: gridRect.left + 56,
+        width: gridRect.width - 56,
+        height: gridRect.height,
+        right: gridRect.right,
+        bottom: gridRect.bottom,
+      })
     }
 
     const handleMouseUp = (e: MouseEvent) => {
       if (resizing) {
         handleResizeEnd()
       }
-      if (moving) {
-        handleMoveEnd()
-      }
+      // Always call — handleMoveEnd has internal guards
+      handleMoveEnd()
       // Drag-to-create: compute grid rect and finish
       const gridRect = gridRef.current?.getBoundingClientRect()
       if (gridRect) {
@@ -553,7 +552,7 @@ function WeekGrid({ interactions }: WeekGridProps) {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [resizing, moving, handleResizeMove, handleResizeEnd, handleMoveEnd, handleMoveMove, handleGridMouseMove, handleGridMouseUp])
+  }, [resizing, handleResizeMove, handleResizeEnd, handleMoveEnd, handleMoveMove, handleGridMouseMove, handleGridMouseUp])
 
   // Grid-level handlers are now handled by global window listeners above.
   // Only keep a noop to prevent React warnings on unused refs.
