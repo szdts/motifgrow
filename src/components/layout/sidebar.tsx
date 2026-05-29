@@ -6,19 +6,14 @@ import { useOKRStore } from '@/stores/okr-store'
 import { useDimensionStore } from '@/stores/dimension-store'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { DimensionIcon } from '@/components/ui/dimension-icon'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Plus, ChevronLeft, ChevronRight, PanelLeftClose } from 'lucide-react'
 
 function MiniCalendar() {
   const today = new Date()
-  const currentDate = useUIStore((s) => s.currentDate)
+  const [selectedDate, setSelectedDate] = useState<Date>(today)
   const [viewYear, setViewYear] = useState(today.getFullYear())
   const [viewMonth, setViewMonth] = useState(today.getMonth())
-
-  useEffect(() => {
-    setViewYear(currentDate.getFullYear())
-    setViewMonth(currentDate.getMonth())
-  }, [currentDate])
 
   const firstDay = new Date(viewYear, viewMonth, 1).getDay()
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate()
@@ -46,7 +41,9 @@ function MiniCalendar() {
   }
 
   const handleDayClick = (day: number) => {
-    useUIStore.getState().setCurrentDate(new Date(viewYear, viewMonth, day))
+    const newDate = new Date(viewYear, viewMonth, day)
+    setSelectedDate(newDate)
+    useUIStore.getState().setCurrentDate(newDate)
   }
 
   return (
@@ -70,7 +67,7 @@ function MiniCalendar() {
         ))}
         {blanks.map((i) => <div key={`b-${i}`} />)}
         {days.map((d) => {
-          const isSelected = d === currentDate.getDate() && viewMonth === currentDate.getMonth() && viewYear === currentDate.getFullYear()
+          const isSelected = d === selectedDate.getDate() && viewMonth === selectedDate.getMonth() && viewYear === selectedDate.getFullYear()
           const isToday = d === today.getDate() && viewMonth === today.getMonth() && viewYear === today.getFullYear()
           return (
             <button
@@ -197,35 +194,37 @@ export function Sidebar() {
   const toggleSidebar = useUIStore((s) => s.toggleSidebar)
 
   return (
-    <aside
-      className="shrink-0 border-r border-black/[0.06] bg-white/60 transition-all duration-200 overflow-hidden"
-      style={{
-        backdropFilter: 'blur(10px)',
-        width: sidebarOpen ? '260px' : '0px',
-        minWidth: sidebarOpen ? '260px' : '0px',
-        borderRightWidth: sidebarOpen ? '1px' : '0px',
-      }}
-    >
-      <div className="w-[260px]">
-        <ScrollArea className="h-full">
-          <div className="p-5 space-y-6">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold tracking-[0.02em] uppercase text-[rgba(0,0,0,0.3)]">侧栏</span>
-              <button
-                onClick={toggleSidebar}
-                className="w-6 h-6 flex items-center justify-center rounded-md text-[rgba(0,0,0,0.3)] hover:text-[#1d1d1f] hover:bg-black/[0.04] transition-colors"
-              >
-                <PanelLeftClose size={14} strokeWidth={1.5} />
-              </button>
+    <div className="relative shrink-0">
+      <aside
+        className="h-full border-r border-black/[0.06] bg-white/60 transition-all duration-200 overflow-hidden"
+        style={{
+          backdropFilter: 'blur(10px)',
+          width: sidebarOpen ? '260px' : '0px',
+          minWidth: sidebarOpen ? '260px' : '0px',
+          borderRightWidth: sidebarOpen ? '1px' : '0px',
+        }}
+      >
+        <div className="w-[260px]">
+          <ScrollArea className="h-full">
+            <div className="p-5 space-y-6">
+              <MiniCalendar />
+              <div className="h-px bg-black/[0.06]" />
+              <QuotaBars />
+              <div className="h-px bg-black/[0.06]" />
+              <BacklogQuickList />
             </div>
-            <MiniCalendar />
-            <div className="h-px bg-black/[0.06]" />
-            <QuotaBars />
-            <div className="h-px bg-black/[0.06]" />
-            <BacklogQuickList />
-          </div>
-        </ScrollArea>
-      </div>
-    </aside>
+          </ScrollArea>
+        </div>
+      </aside>
+      {/* Collapse button - right edge, vertically centered */}
+      {sidebarOpen && (
+        <button
+          onClick={toggleSidebar}
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 w-6 h-6 flex items-center justify-center rounded-full bg-white border border-black/[0.08] text-[rgba(0,0,0,0.3)] hover:text-[#1d1d1f] hover:bg-black/[0.02] transition-all duration-200 shadow-sm"
+        >
+          <PanelLeftClose size={12} strokeWidth={1.5} />
+        </button>
+      )}
+    </div>
   )
 }

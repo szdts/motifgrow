@@ -7,13 +7,14 @@ import { DimensionTabs } from '@/components/layout/dimension-tabs'
 import { useUIStore } from '@/stores/ui-store'
 import { useCalendarStore } from '@/stores/calendar-store'
 import { useDimensionStore } from '@/stores/dimension-store'
-import { ChevronLeft, ChevronRight, ChevronDown, Check, X, Clock, PanelLeftOpen } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronDown, Check, X, Clock, PanelLeftOpen, Plus } from 'lucide-react'
 import { DatePickerPopover } from '@/components/calendar/date-picker-popover'
 import { DayView } from '@/components/calendar/day-view'
 import { MonthView } from '@/components/calendar/month-view'
 import { EventPopover } from '@/components/calendar/event-popover'
 import { EventEditModal } from '@/components/calendar/event-edit-modal'
 import { MiniCreateCard } from '@/components/calendar/mini-create-card'
+import { DimensionIcon } from '@/components/ui/dimension-icon'
 import { useCalendarInteractions } from '@/hooks/use-calendar-interactions'
 import type { CalendarEvent } from '@/types'
 
@@ -21,7 +22,11 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i) // 00:00 - 23:00
 const HOUR_HEIGHT = 56
 const GRID_START_HOUR = 0
 
-function CalendarNav() {
+interface CalendarNavProps {
+  onCreateEvent: () => void
+}
+
+function CalendarNav({ onCreateEvent }: CalendarNavProps) {
   const { calendarView, setCalendarView, goToToday, goForward, goBackward, currentDate } = useUIStore()
 
   const formatDateRange = () => {
@@ -64,20 +69,29 @@ function CalendarNav() {
         </DatePickerPopover>
       </div>
 
-      <div className="flex items-center rounded-full bg-black/[0.04] p-0.5">
-        {(['day', 'week', 'month'] as const).map((view) => (
-          <button
-            key={view}
-            onClick={() => setCalendarView(view)}
-            className={`rounded-full px-3 py-1 text-[12px] font-medium tracking-[-0.01em] transition-all duration-200 ${
-              calendarView === view
-                ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
-                : 'text-[rgba(0,0,0,0.4)] hover:text-[#1d1d1f]'
-            }`}
-          >
-            {{ day: '日', week: '周', month: '月' }[view]}
-          </button>
-        ))}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center rounded-full bg-black/[0.04] p-0.5">
+          {(['day', 'week', 'month'] as const).map((view) => (
+            <button
+              key={view}
+              onClick={() => setCalendarView(view)}
+              className={`rounded-full px-3 py-1 text-[12px] font-medium tracking-[-0.01em] transition-all duration-200 ${
+                calendarView === view
+                  ? 'bg-white text-[#1d1d1f] shadow-[0_1px_3px_rgba(0,0,0,0.08)]'
+                  : 'text-[rgba(0,0,0,0.4)] hover:text-[#1d1d1f]'
+              }`}
+            >
+              {{ day: '日', week: '周', month: '月' }[view]}
+            </button>
+          ))}
+        </div>
+        <button
+          onClick={onCreateEvent}
+          className="flex items-center gap-1.5 rounded-full bg-[#0071e3] px-3.5 py-1.5 text-[12px] font-medium text-white hover:bg-[#0077ED] transition-colors shadow-[0_1px_3px_rgba(0,113,227,0.3)]"
+        >
+          <Plus size={14} strokeWidth={2} />
+          新建日程
+        </button>
       </div>
     </div>
   )
@@ -365,7 +379,7 @@ function SuggestionPrompt() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="fixed bottom-5 right-5 z-50 w-max max-w-[420px]"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-max max-w-[90%]"
         >
           <div
             className="flex items-center gap-3 rounded-xl bg-white p-4 shadow-[rgba(0,0,0,0.04)_0_1px_3px,rgba(0,0,0,0.08)_0_1px_2px]"
@@ -711,9 +725,219 @@ function WeekGrid({ interactions }: WeekGridProps) {
   )
 }
 
+function QuickCreateModal({ onClose }: { onClose: () => void }) {
+  const today = new Date()
+  const [title, setTitle] = useState('')
+  const [dimensionId, setDimensionId] = useState('growth')
+  const [dateStr, setDateStr] = useState(
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  )
+  const [startHour, setStartHour] = useState(9)
+  const [startMinute, setStartMinute] = useState(0)
+  const [endHour, setEndHour] = useState(10)
+  const [endMinute, setEndMinute] = useState(0)
+  const [description, setDescription] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const addEvent = useCalendarStore((s) => s.addEvent)
+  const dimensions = useDimensionStore((s) => s.dimensions)
+
+  useEffect(() => {
+    const timer = setTimeout(() => inputRef.current?.focus(), 50)
+    return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  const selectedDim = dimensions.find((d) => d.id === dimensionId)
+  const selectedColor = selectedDim?.color ?? '#86868b'
+
+  const handleSave = () => {
+    if (!title.trim()) return
+    const [y, m, d] = dateStr.split('-').map(Number)
+    const startAt = new Date(y, m - 1, d, startHour, startMinute, 0, 0)
+    const endAt = new Date(y, m - 1, d, endHour, endMinute, 0, 0)
+    if (endAt <= startAt) return
+
+    addEvent({
+      id: `evt-${Date.now()}`,
+      dimensionId,
+      backlogItemId: null,
+      title: title.trim(),
+      startAt,
+      endAt,
+      eventType: 'confirmed',
+    })
+    onClose()
+  }
+
+  const hourOptions = Array.from({ length: 24 }, (_, i) => i)
+  const minuteOptions = [0, 15, 30, 45]
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/20"
+      onClick={onClose}
+    >
+      <div
+        className="w-[380px] rounded-xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-black/[0.06]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-4 pb-0">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] text-[rgba(0,0,0,0.36)] tracking-[-0.01em]">新建日程</span>
+            <button
+              onClick={onClose}
+              className="w-6 h-6 flex items-center justify-center rounded-full text-[rgba(0,0,0,0.3)] hover:text-[#1d1d1f] hover:bg-black/[0.04] transition-colors"
+            >
+              <X size={14} strokeWidth={1.5} />
+            </button>
+          </div>
+          {/* Title input */}
+          <input
+            ref={inputRef}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="添加主题"
+            className="w-full text-[18px] font-semibold tracking-[-0.02em] text-[#1d1d1f] placeholder:text-[rgba(0,0,0,0.2)] outline-none mb-4"
+            onKeyDown={(e) => { if (e.key === 'Enter' && title.trim()) handleSave() }}
+          />
+        </div>
+
+        {/* Fields */}
+        <div className="px-4 space-y-3 pb-4">
+          {/* Date */}
+          <div className="flex items-center gap-3 text-[13px] text-[rgba(0,0,0,0.56)]">
+            <Clock size={15} strokeWidth={1.5} className="text-[rgba(0,0,0,0.3)] shrink-0" />
+            <input
+              type="date"
+              value={dateStr}
+              onChange={(e) => setDateStr(e.target.value)}
+              className="bg-transparent text-[#0071e3] font-medium outline-none cursor-pointer"
+            />
+          </div>
+
+          {/* Time */}
+          <div className="flex items-center gap-3 text-[13px] text-[rgba(0,0,0,0.56)]">
+            <div className="w-[15px] shrink-0" />
+            <div className="flex items-center gap-1.5">
+              <select
+                value={startHour}
+                onChange={(e) => {
+                  const h = Number(e.target.value)
+                  setStartHour(h)
+                  if (endHour < h || (endHour === h && endMinute <= startMinute)) {
+                    setEndHour(Math.min(h + 1, 23))
+                    setEndMinute(0)
+                  }
+                }}
+                className="bg-transparent text-[#0071e3] font-medium outline-none cursor-pointer"
+              >
+                {hourOptions.map((h) => (
+                  <option key={h} value={h}>{String(h).padStart(2, '0')}</option>
+                ))}
+              </select>
+              <span>:</span>
+              <select
+                value={startMinute}
+                onChange={(e) => setStartMinute(Number(e.target.value))}
+                className="bg-transparent text-[#0071e3] font-medium outline-none cursor-pointer"
+              >
+                {minuteOptions.map((m) => (
+                  <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
+                ))}
+              </select>
+              <span className="mx-1 text-[rgba(0,0,0,0.3)]">—</span>
+              <select
+                value={endHour}
+                onChange={(e) => setEndHour(Number(e.target.value))}
+                className="bg-transparent text-[#0071e3] font-medium outline-none cursor-pointer"
+              >
+                {hourOptions.map((h) => (
+                  <option key={h} value={h}>{String(h).padStart(2, '0')}</option>
+                ))}
+              </select>
+              <span>:</span>
+              <select
+                value={endMinute}
+                onChange={(e) => setEndMinute(Number(e.target.value))}
+                className="bg-transparent text-[#0071e3] font-medium outline-none cursor-pointer"
+              >
+                {minuteOptions.map((m) => (
+                  <option key={m} value={m}>{String(m).padStart(2, '0')}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Dimension chips */}
+          <div className="flex gap-1 flex-wrap">
+            {dimensions.map((d) => (
+              <button
+                key={d.id}
+                onClick={() => setDimensionId(d.id)}
+                className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium transition-all duration-150 ${
+                  dimensionId === d.id
+                    ? 'text-white shadow-sm'
+                    : 'text-[rgba(0,0,0,0.36)] bg-black/[0.03] hover:bg-black/[0.06]'
+                }`}
+                style={
+                  dimensionId === d.id ? { backgroundColor: d.color } : undefined
+                }
+              >
+                <DimensionIcon
+                  name={d.icon}
+                  size={10}
+                  strokeWidth={dimensionId === d.id ? 2 : 1.5}
+                />
+                {d.name}
+              </button>
+            ))}
+          </div>
+
+          {/* Description */}
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="添加描述 (可选)"
+            rows={2}
+            className="w-full text-[13px] text-[#1d1d1f] placeholder:text-[rgba(0,0,0,0.2)] outline-none resize-none rounded-lg bg-black/[0.02] px-3 py-2 border border-black/[0.04] focus:border-black/[0.1] transition-colors"
+          />
+
+          {/* Action buttons */}
+          <div className="flex items-center justify-end gap-2 pt-1">
+            <button
+              onClick={onClose}
+              className="rounded-full border border-black/[0.08] px-3.5 py-1.5 text-[12px] font-medium text-[rgba(0,0,0,0.48)] hover:text-[#1d1d1f] hover:border-black/[0.15] transition-all duration-150"
+            >
+              取消
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!title.trim()}
+              className="rounded-full px-3.5 py-1.5 text-[12px] font-medium text-white transition-all duration-200 hover:brightness-[0.95] active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none"
+              style={{ backgroundColor: selectedColor }}
+            >
+              保存
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function CalendarPage() {
   const calendarView = useUIStore((s) => s.calendarView)
   const interactions = useCalendarInteractions()
+  const [showQuickCreate, setShowQuickCreate] = useState(false)
 
   const {
     popover,
@@ -751,7 +975,7 @@ export default function CalendarPage() {
         )}
         <div className="px-5 pt-4 pb-3 space-y-3">
           <DimensionTabs />
-          <CalendarNav />
+          <CalendarNav onCreateEvent={() => setShowQuickCreate(true)} />
         </div>
         <div className="relative flex-1 flex flex-col overflow-hidden">
           <SuggestionPrompt />
@@ -788,6 +1012,11 @@ export default function CalendarPage() {
           anchorRect={createCard.anchorRect}
           onClose={() => { closeCreateCard(); interactions.clearDragSelection() }}
         />
+      )}
+
+      {/* Quick create modal from top-right button */}
+      {showQuickCreate && (
+        <QuickCreateModal onClose={() => setShowQuickCreate(false)} />
       )}
     </>
   )
