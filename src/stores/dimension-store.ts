@@ -7,6 +7,8 @@ interface DimensionState {
   toggleDimension: (id: string) => void
   resetToAll: () => void
   addDimension: (dim: Dimension) => void
+  updateDimension: (id: string, patch: Partial<Omit<Dimension, 'id'>>) => void
+  removeDimension: (id: string) => void
 }
 
 export const useDimensionStore = create<DimensionState>((set) => ({
@@ -26,4 +28,15 @@ export const useDimensionStore = create<DimensionState>((set) => ({
   resetToAll: () => set({ activeDimensionIds: [] }),
   addDimension: (dim) =>
     set((s) => ({ dimensions: [...s.dimensions, dim] })),
+  updateDimension: (id, patch) =>
+    set((s) => ({
+      dimensions: s.dimensions.map((d) =>
+        d.id === id ? { ...d, ...patch } : d
+      ),
+    })),
+  removeDimension: (id) =>
+    set((s) => ({
+      dimensions: s.dimensions.filter((d) => d.id !== id),
+      activeDimensionIds: s.activeDimensionIds.filter((x) => x !== id),
+    })),
 }))
