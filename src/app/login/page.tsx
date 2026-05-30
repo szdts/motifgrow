@@ -83,8 +83,12 @@ export default function LoginPage() {
 
     if (Object.keys(newErrors).length > 0) return
 
-    await login(email, password)
-    router.replace('/')
+    const result = await login(email, password)
+    if (result.success) {
+      router.replace('/')
+    } else if (result.error) {
+      setErrors({ email: result.error })
+    }
   }
 
   const handleBlur = (field: 'email' | 'password') => {

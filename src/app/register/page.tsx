@@ -104,8 +104,12 @@ export default function RegisterPage() {
 
     if (Object.keys(newErrors).length > 0) return
 
-    await register(name, email, password)
-    router.replace('/onboarding')
+    const result = await register(name, email, password)
+    if (result.success) {
+      router.replace('/onboarding')
+    } else if (result.error) {
+      setErrors({ email: result.error })
+    }
   }
 
   const handleBlur = (field: keyof FormErrors) => {

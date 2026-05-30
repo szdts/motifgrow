@@ -1,0 +1,18 @@
+-- Motifgrow Database Schema
+-- Complete DDL reference: see architecture doc
+--
+-- Tables (11):
+-- 1.  profiles            -- User profile (extends auth.users)
+-- 2.  dimensions          -- Life dimensions (global axes)
+-- 3.  objectives          -- OKR objectives
+-- 4.  key_results         -- Key results
+-- 5.  backlog_items       -- Media library
+-- 6.  calendar_events     -- Persistent events (confirmed + imported)
+-- 7.  calendar_suggestions -- Temporary suggestions (AI-generated, expire)
+-- 8.  weekly_reviews      -- Weekly reports
+-- 9.  quarterly_reviews   -- Quarterly reports
+-- 10. chat_messages       -- AI conversation history
+-- 11. stripe_events       -- Webhook idempotency
+--
+-- All tables have RLS enabled with policy: user_id = auth.uid()
+-- Tables supporting soft delete have a deleted_at column

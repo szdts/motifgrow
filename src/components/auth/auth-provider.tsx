@@ -16,23 +16,25 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const user = useAuthStore((s) => s.user)
+  const initialize = useAuthStore((s) => s.initialize)
   const pathname = usePathname()
   const router = useRouter()
-  const [isChecked, setIsChecked] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
-    if (isPublicPath(pathname)) {
-      setIsChecked(true)
-      return
-    }
+    initialize().then(() => {
+      setIsInitialized(true)
+    })
+  }, [initialize])
+
+  useEffect(() => {
+    if (!isInitialized) return
+    if (isPublicPath(pathname)) return
 
     if (!user) {
       router.replace('/login')
-      return
     }
-
-    setIsChecked(true)
-  }, [user, pathname, router])
+  }, [user, pathname, router, isInitialized])
 
   // On public pages, always render
   if (isPublicPath(pathname)) {
@@ -40,7 +42,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   // On protected pages, show loading until auth check completes
-  if (!isChecked || !user) {
+  if (!isInitialized || !user) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="w-5 h-5 border-2 border-[#0071e3] border-t-transparent rounded-full animate-spin" />
